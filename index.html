@@ -20,7 +20,7 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-   // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
+// ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
      const firebaseConfig = {
       apiKey: "AIzaSyDflVWpWRaM79otPlFdgY9Jj2_TT8coP8c",
       authDomain: "workout-tracker-cf45f.firebaseapp.com",
@@ -29,6 +29,7 @@
       messagingSenderId: "557876111419",
       appId: "1:557876111419:web:621155c84179128c89541e"
     };
+
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -97,6 +98,7 @@
       const [editing, setEditing] = useState(null);
       const [workout, setWorkout] = useState(null);
       const [editingWorkout, setEditingWorkout] = useState(null);
+      const [showTimeEdit, setShowTimeEdit] = useState(false);
       const [timer, setTimer] = useState({ time: 90, left: 0, active: false });
       const [showNew, setShowNew] = useState(false);
       const [newEx, setNewEx] = useState({ name: '', sets: 3, reps: 10, instructions: '', videoUrl: '' });
@@ -479,16 +481,47 @@
 
       // EDIT WORKOUT VIEW
       if (editingWorkout) {
+        const workoutDuration = () => {
+          const start = new Date(editingWorkout.start);
+          const end = editingWorkout.end ? new Date(editingWorkout.end) : new Date();
+          const diffMs = end - start;
+          const diffMins = Math.floor(diffMs / 60000);
+          return `${diffMins} minutes`;
+        };
+
         return (
           <div className="min-h-screen bg-slate-900 p-4">
             <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg p-6">
               <div className="flex justify-between mb-6">
-                <h1 className="text-2xl font-bold text-white">Edit Workout: {editingWorkout.name}</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Edit Workout: {editingWorkout.name}</h1>
+                  <div className="text-sm text-gray-400 mt-1">Duration: {workoutDuration()}</div>
+                </div>
                 <button onClick={() => setEditingWorkout(null)} className="text-gray-400 text-2xl">✕</button>
               </div>
 
-              <div className="text-sm text-gray-400 mb-4">
-                {new Date(editingWorkout.start).toLocaleString()}
+              <div className="bg-slate-700 rounded-lg p-4 mb-4">
+                <h3 className="text-white font-semibold mb-3">Workout Times</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-gray-300 text-sm block mb-1">Start Time</label>
+                    <input
+                      type="datetime-local"
+                      value={new Date(editingWorkout.start).toISOString().slice(0, 16)}
+                      onChange={(e) => setEditingWorkout({ ...editingWorkout, start: new Date(e.target.value).toISOString() })}
+                      className="w-full px-3 py-2 bg-slate-600 text-white rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-300 text-sm block mb-1">End Time</label>
+                    <input
+                      type="datetime-local"
+                      value={editingWorkout.end ? new Date(editingWorkout.end).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setEditingWorkout({ ...editingWorkout, end: new Date(e.target.value).toISOString() })}
+                      className="w-full px-3 py-2 bg-slate-600 text-white rounded"
+                    />
+                  </div>
+                </div>
               </div>
 
               {editingWorkout.exercises.map((ex, i) => (
@@ -652,6 +685,14 @@
       // WORKOUT VIEW
       if (view === 'workout' && workout) {
         const vid = video ? getVideoId(video) : null;
+        const workoutDuration = () => {
+          const start = new Date(workout.start);
+          const now = new Date();
+          const diffMs = now - start;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffSecs = Math.floor((diffMs % 60000) / 1000);
+          return `${diffMins}:${diffSecs.toString().padStart(2, '0')}`;
+        };
         
         return (
           <div className="min-h-screen bg-slate-900 p-4">
@@ -692,9 +733,39 @@
 
             <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg p-6">
               <div className="flex justify-between mb-4">
-                <h1 className="text-2xl font-bold text-white">{workout.name}</h1>
-                <button onClick={() => setView('home')} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                <div>
+                  <h1 className="text-2xl font-bold text-white">{workout.name}</h1>
+                  <div className="text-sm text-gray-400 mt-1">
+                    Duration: <span className="text-green-400 font-semibold">{workoutDuration()}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowTimeEdit(!showTimeEdit)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                    ⏱️ Edit Time
+                  </button>
+                  <button onClick={() => setView('home')} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                </div>
               </div>
+
+              {showTimeEdit && (
+                <div className="bg-slate-700 rounded-lg p-4 mb-4">
+                  <h3 className="text-white font-semibold mb-3">Override Workout Times</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-gray-300 text-sm block mb-1">Start Time</label>
+                      <input
+                        type="datetime-local"
+                        value={new Date(workout.start).toISOString().slice(0, 16)}
+                        onChange={(e) => setWorkout({ ...workout, start: new Date(e.target.value).toISOString() })}
+                        className="w-full px-3 py-2 bg-slate-600 text-white rounded"
+                      />
+                    </div>
+                    <div className="text-gray-400 text-xs">
+                      Current duration: {workoutDuration()}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-700 rounded-lg p-4 mb-4">
                 <h3 className="text-white font-semibold mb-2 flex items-center gap-2"><Clock />Rest Timer</h3>
@@ -844,22 +915,28 @@
               </div>
             ) : (
               <div className="space-y-2">
-                {workouts.slice(0, 20).map(w => (
-                  <div key={w.id} className="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
-                    <div className="flex-1">
-                      <div className="font-bold text-gray-800">{w.name}</div>
-                      <div className="text-sm text-gray-600">{new Date(w.start).toLocaleDateString()} • {w.exercises.reduce((s, e) => s + e.done.filter(Boolean).length, 0)} sets</div>
+                {workouts.slice(0, 20).map(w => {
+                  const duration = w.end && w.start ? Math.floor((new Date(w.end) - new Date(w.start)) / 60000) : null;
+                  return (
+                    <div key={w.id} className="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-800">{w.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {new Date(w.start).toLocaleDateString()} • {w.exercises.reduce((s, e) => s + e.done.filter(Boolean).length, 0)} sets
+                          {duration && <span className="ml-2">• {duration} min</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingWorkout(w)} className="text-blue-600 hover:text-blue-700" title="Edit">
+                          <Edit2 />
+                        </button>
+                        <button onClick={() => deleteWorkout(w.id)} className="text-red-500 hover:text-red-700" title="Delete">
+                          <Trash2 />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setEditingWorkout(w)} className="text-blue-600 hover:text-blue-700" title="Edit">
-                        <Edit2 />
-                      </button>
-                      <button onClick={() => deleteWorkout(w.id)} className="text-red-500 hover:text-red-700" title="Delete">
-                        <Trash2 />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
