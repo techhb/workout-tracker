@@ -20,7 +20,7 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-  // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
+   // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
      const firebaseConfig = {
       apiKey: "AIzaSyDflVWpWRaM79otPlFdgY9Jj2_TT8coP8c",
       authDomain: "workout-tracker-cf45f.firebaseapp.com",
@@ -29,7 +29,6 @@
       messagingSenderId: "557876111419",
       appId: "1:557876111419:web:621155c84179128c89541e"
     };
-
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -260,7 +259,7 @@
               osc.start(start);
               osc.stop(start + 0.15);
             }
-            alert('⏰ REST DONE!');
+            setTimeout(() => alert('⏰ REST DONE!'), 1000);
           } else if (type === 'ding') {
             // Set completed - single pleasant ding
             const osc = ctx.createOscillator();
@@ -269,10 +268,10 @@
             gain.connect(ctx.destination);
             osc.frequency.value = 800;
             osc.type = 'sine';
-            gain.gain.setValueAtTime(0.5, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            gain.gain.setValueAtTime(0.6, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
             osc.start(now);
-            osc.stop(now + 0.3);
+            osc.stop(now + 0.4);
             
             // Add a higher harmonic for a bell-like sound
             const osc2 = ctx.createOscillator();
@@ -281,13 +280,20 @@
             gain2.connect(ctx.destination);
             osc2.frequency.value = 1200;
             osc2.type = 'sine';
-            gain2.gain.setValueAtTime(0.3, now);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            gain2.gain.setValueAtTime(0.4, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
             osc2.start(now);
-            osc2.stop(now + 0.25);
+            osc2.stop(now + 0.35);
+            
+            console.log('Ding sound played!');
           }
         } catch (e) {
           console.error('Audio error:', e);
+          // Fallback to system beep
+          if (type === 'ding') {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURQJUP/3jw8AAA==');
+            audio.play().catch(() => {});
+          }
         }
       };
 
@@ -692,7 +698,13 @@
 
               <div className="bg-slate-700 rounded-lg p-4 mb-4">
                 <h3 className="text-white font-semibold mb-2 flex items-center gap-2"><Clock />Rest Timer</h3>
-                <input type="number" value={timer.time} onChange={(e) => setTimer({ ...timer, time: +e.target.value })} disabled={timer.active} className="w-20 px-2 py-1 bg-slate-600 text-white rounded mb-2" />
+                <div className="flex items-center gap-2 mb-2">
+                  <input type="number" value={timer.time} onChange={(e) => setTimer({ ...timer, time: +e.target.value })} disabled={timer.active} className="w-20 px-2 py-1 bg-slate-600 text-white rounded" />
+                  <span className="text-gray-300 text-sm">seconds</span>
+                  <button onClick={() => playSound('ding')} className="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700">
+                    🔔 Test Sound
+                  </button>
+                </div>
                 <div className="text-4xl font-bold text-white text-center mb-2">{Math.floor(timer.left / 60)}:{(timer.left % 60).toString().padStart(2, '0')}</div>
                 <div className="flex gap-2">
                   <button onClick={() => timer.active ? setTimer({ ...timer, active: false }) : setTimer({ ...timer, left: timer.time, active: true })} className="flex-1 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">{timer.active ? 'Pause' : 'Start'}</button>
