@@ -9,7 +9,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Firebase v9 compat -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -21,7 +21,7 @@
     const { useState, useEffect } = React;
     
     // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
-    const firebaseConfig = {
+     const firebaseConfig = {
       apiKey: "AIzaSyDflVWpWRaM79otPlFdgY9Jj2_TT8coP8c",
       authDomain: "workout-tracker-cf45f.firebaseapp.com",
       projectId: "workout-tracker-cf45f",
@@ -30,18 +30,15 @@
       appId: "1:557876111419:web:621155c84179128c89541e"
     };
 
-    // Initialize Firebase
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    // Simple Icon Component
+    // Icons
     const Icon = ({ children, className = "w-5 h-5" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {children}
-      </svg>
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
     );
     
     const Calendar = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
@@ -55,6 +52,8 @@
     const Edit2 = (p) => <Icon {...p} className="w-4 h-4"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
     const Plus = (p) => <Icon {...p} className="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
     const LogOut = (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></Icon>;
+    const BarChart = (p) => <Icon {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></Icon>;
+    const History = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
 
     const EXERCISES = {
       bicepTricep: [
@@ -98,6 +97,7 @@
       const [view, setView] = useState('home');
       const [editing, setEditing] = useState(null);
       const [workout, setWorkout] = useState(null);
+      const [editingWorkout, setEditingWorkout] = useState(null);
       const [timer, setTimer] = useState({ time: 90, left: 0, active: false });
       const [showNew, setShowNew] = useState(false);
       const [newEx, setNewEx] = useState({ name: '', sets: 3, reps: 10, instructions: '', videoUrl: '' });
@@ -170,14 +170,38 @@
         }
       };
 
-      const deleteWorkout = async (workoutId) => {
+      const updateWorkoutInDb = async (workoutId, workoutData) => {
         if (!user) return;
+        try {
+          await db.collection('users').doc(user.uid).collection('workouts').doc(workoutId).update({
+            ...workoutData,
+            updated: new Date().toISOString()
+          });
+          loadData(user.uid);
+        } catch (error) {
+          console.error('Error updating workout:', error);
+          alert('Error updating workout.');
+        }
+      };
+
+      const deleteWorkout = async (workoutId) => {
+        if (!user || !confirm('Delete this workout?')) return;
         try {
           await db.collection('users').doc(user.uid).collection('workouts').doc(workoutId).delete();
           setWorkouts(workouts.filter(w => w.id !== workoutId));
         } catch (error) {
           console.error('Error deleting:', error);
         }
+      };
+
+      const getLastWorkout = (exerciseName) => {
+        for (let w of workouts) {
+          const ex = w.exercises?.find(e => e.name === exerciseName);
+          if (ex && ex.weights && ex.weights.some(w => w)) {
+            return ex;
+          }
+        }
+        return null;
       };
 
       const handleAuth = async (e) => {
@@ -262,27 +286,12 @@
               <form onSubmit={handleAuth} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="your@email.com"
-                  />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="your@email.com" />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength="6"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="••••••"
-                  />
+                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength="6" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="••••••" />
                 </div>
                 
                 <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 font-semibold">
@@ -298,14 +307,201 @@
               
               <div className="mt-6 text-xs text-gray-500 text-center space-y-1">
                 <p>✅ Sync across all devices</p>
-                <p>✅ 90-day workout history</p>
-                <p>✅ Free forever</p>
+                <p>✅ Track last workout data</p>
+                <p>✅ Week-by-week progress</p>
               </div>
             </div>
           </div>
         );
       }
 
+      // PROGRESS DASHBOARD
+      if (view === 'progress') {
+        const getWeeklyData = () => {
+          const weeks = {};
+          workouts.forEach(w => {
+            const date = new Date(w.start);
+            const weekStart = new Date(date);
+            weekStart.setDate(date.getDate() - date.getDay());
+            const weekKey = weekStart.toISOString().split('T')[0];
+            
+            if (!weeks[weekKey]) {
+              weeks[weekKey] = { workouts: 0, sets: 0, exercises: {} };
+            }
+            weeks[weekKey].workouts++;
+            w.exercises.forEach(ex => {
+              const completedSets = ex.done?.filter(Boolean).length || 0;
+              weeks[weekKey].sets += completedSets;
+              
+              if (!weeks[weekKey].exercises[ex.name]) {
+                weeks[weekKey].exercises[ex.name] = [];
+              }
+              
+              ex.weights?.forEach((weight, idx) => {
+                if (weight && ex.done[idx]) {
+                  weeks[weekKey].exercises[ex.name].push({
+                    weight: parseFloat(weight),
+                    reps: parseInt(ex.reps2?.[idx] || ex.reps)
+                  });
+                }
+              });
+            });
+          });
+          
+          return Object.entries(weeks).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 12);
+        };
+
+        const weeklyData = getWeeklyData();
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+            <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+                  <BarChart className="w-8 h-8 text-indigo-600" />
+                  Progress Dashboard
+                </h1>
+                <button onClick={() => setView('home')} className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                  Back
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {weeklyData.map(([weekKey, data]) => {
+                  const weekDate = new Date(weekKey);
+                  const weekEnd = new Date(weekDate);
+                  weekEnd.setDate(weekDate.getDate() + 6);
+                  
+                  return (
+                    <div key={weekKey} className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-lg font-bold text-gray-800">
+                          Week of {weekDate.toLocaleDateString()} - {weekEnd.toLocaleDateString()}
+                        </h3>
+                        <div className="flex gap-4 text-sm">
+                          <span className="bg-indigo-600 text-white px-3 py-1 rounded">{data.workouts} workouts</span>
+                          <span className="bg-purple-600 text-white px-3 py-1 rounded">{data.sets} sets</span>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(data.exercises).map(([exName, sets]) => {
+                          const maxWeight = Math.max(...sets.map(s => s.weight));
+                          const totalReps = sets.reduce((sum, s) => sum + s.reps, 0);
+                          const avgWeight = (sets.reduce((sum, s) => sum + s.weight, 0) / sets.length).toFixed(1);
+                          
+                          return (
+                            <div key={exName} className="bg-white rounded p-3 border border-gray-200">
+                              <div className="font-semibold text-sm text-gray-800 mb-1">{exName}</div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div>Max: <span className="font-bold text-indigo-600">{maxWeight} lbs</span></div>
+                                <div>Avg: <span className="font-bold">{avgWeight} lbs</span></div>
+                                <div>Total Reps: <span className="font-bold">{totalReps}</span></div>
+                                <div>Sets: <span className="font-bold">{sets.length}</span></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {weeklyData.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <BarChart className="w-16 h-16 mx-auto mb-3 opacity-50" />
+                  <p>No workout data yet. Start logging workouts to see progress!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      // EDIT WORKOUT VIEW
+      if (editingWorkout) {
+        return (
+          <div className="min-h-screen bg-slate-900 p-4">
+            <div className="max-w-4xl mx-auto bg-slate-800 rounded-lg p-6">
+              <div className="flex justify-between mb-6">
+                <h1 className="text-2xl font-bold text-white">Edit Workout: {editingWorkout.name}</h1>
+                <button onClick={() => setEditingWorkout(null)} className="text-gray-400 text-2xl">✕</button>
+              </div>
+
+              <div className="text-sm text-gray-400 mb-4">
+                {new Date(editingWorkout.start).toLocaleString()}
+              </div>
+
+              {editingWorkout.exercises.map((ex, i) => (
+                <div key={i} className="bg-slate-700 rounded-lg p-4 mb-3">
+                  <h3 className="text-white font-semibold mb-3">{ex.name}</h3>
+                  {Array.from({ length: ex.sets }).map((_, j) => (
+                    <div key={j} className="flex items-center gap-2 mb-2 flex-wrap">
+                      <input
+                        type="checkbox"
+                        checked={ex.done?.[j] || false}
+                        onChange={(e) => {
+                          const updated = { ...editingWorkout };
+                          if (!updated.exercises[i].done) updated.exercises[i].done = Array(ex.sets).fill(false);
+                          updated.exercises[i].done[j] = e.target.checked;
+                          setEditingWorkout(updated);
+                        }}
+                        className="w-5 h-5"
+                      />
+                      <span className="text-white text-sm w-12">Set {j + 1}</span>
+                      <input
+                        type="number"
+                        placeholder="Weight"
+                        value={ex.weights?.[j] || ''}
+                        onChange={(e) => {
+                          const updated = { ...editingWorkout };
+                          if (!updated.exercises[i].weights) updated.exercises[i].weights = Array(ex.sets).fill('');
+                          updated.exercises[i].weights[j] = e.target.value;
+                          setEditingWorkout(updated);
+                        }}
+                        className="w-20 px-2 py-1 bg-slate-600 text-white rounded text-sm"
+                      />
+                      <span className="text-gray-300 text-xs">lbs ×</span>
+                      <input
+                        type="number"
+                        placeholder="Reps"
+                        value={ex.reps2?.[j] || ''}
+                        onChange={(e) => {
+                          const updated = { ...editingWorkout };
+                          if (!updated.exercises[i].reps2) updated.exercises[i].reps2 = Array(ex.sets).fill('');
+                          updated.exercises[i].reps2[j] = e.target.value;
+                          setEditingWorkout(updated);
+                        }}
+                        className="w-16 px-2 py-1 bg-slate-600 text-white rounded text-sm"
+                      />
+                      <span className="text-gray-300 text-xs">reps</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const { id, ...data } = editingWorkout;
+                    updateWorkoutInDb(id, data);
+                    setEditingWorkout(null);
+                  }}
+                  className="flex-1 bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700"
+                >
+                  💾 Save Changes
+                </button>
+                <button onClick={() => setEditingWorkout(null)} className="flex-1 bg-slate-600 text-white py-3 rounded hover:bg-slate-500">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // EDIT TEMPLATE VIEW
       if (view === 'edit' && editing) {
         return (
           <div className="min-h-screen bg-slate-900 p-4">
@@ -395,6 +591,7 @@
         );
       }
 
+      // WORKOUT VIEW
       if (view === 'workout' && workout) {
         const vid = video ? getVideoId(video) : null;
         
@@ -439,34 +636,50 @@
                 </div>
               </div>
 
-              {workout.exercises.map((ex, i) => (
-                <div key={i} className="bg-slate-700 rounded-lg p-4 mb-3">
-                  <h3 className="text-white font-semibold mb-2">{ex.name}</h3>
-                  {ex.instructions && (
-                    <div className="bg-slate-600 rounded p-3 mb-2">
-                      <div className="text-yellow-400 text-xs font-semibold mb-1">📝 INSTRUCTIONS</div>
-                      <div className="text-gray-200 text-sm">{ex.instructions}</div>
-                    </div>
-                  )}
-                  {ex.videoUrl && (
-                    <button onClick={() => setVideo(ex.videoUrl)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mb-3 text-sm font-semibold flex items-center gap-2">
-                      ▶️ Watch Video
-                    </button>
-                  )}
-                  {Array.from({ length: ex.sets }).map((_, j) => (
-                    <div key={j} className="flex items-center gap-2 mb-2 flex-wrap">
-                      <button onClick={() => { const w = { ...workout }; w.exercises[i].done[j] = !w.exercises[i].done[j]; setWorkout(w); if (w.exercises[i].done[j]) setTimer({ ...timer, left: timer.time, active: true }); }} className={`w-9 h-9 rounded flex items-center justify-center font-bold border-2 ${ex.done[j] ? 'bg-green-600 border-green-600 text-white' : 'bg-slate-600 border-slate-500 text-gray-400'}`}>
-                        {ex.done[j] ? '✓' : ''}
+              {workout.exercises.map((ex, i) => {
+                const lastWorkout = getLastWorkout(ex.name);
+                
+                return (
+                  <div key={i} className="bg-slate-700 rounded-lg p-4 mb-3">
+                    <h3 className="text-white font-semibold mb-2">{ex.name}</h3>
+                    
+                    {lastWorkout && (
+                      <div className="bg-blue-900 bg-opacity-50 border border-blue-500 rounded p-2 mb-3 text-xs">
+                        <div className="text-blue-300 font-semibold mb-1">📊 Last Workout:</div>
+                        <div className="text-blue-200 flex gap-4 flex-wrap">
+                          {lastWorkout.weights.map((w, idx) => w && lastWorkout.done[idx] ? (
+                            <span key={idx}>Set {idx + 1}: {w} lbs × {lastWorkout.reps2?.[idx] || lastWorkout.reps} reps</span>
+                          ) : null)}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {ex.instructions && (
+                      <div className="bg-slate-600 rounded p-3 mb-2">
+                        <div className="text-yellow-400 text-xs font-semibold mb-1">📝 INSTRUCTIONS</div>
+                        <div className="text-gray-200 text-sm">{ex.instructions}</div>
+                      </div>
+                    )}
+                    {ex.videoUrl && (
+                      <button onClick={() => setVideo(ex.videoUrl)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mb-3 text-sm font-semibold flex items-center gap-2">
+                        ▶️ Watch Video
                       </button>
-                      <span className="text-white text-sm w-12">Set {j + 1}</span>
-                      <input type="number" placeholder="Wt" value={ex.weights[j]} onChange={(e) => { const w = { ...workout }; w.exercises[i].weights[j] = e.target.value; setWorkout(w); }} className="w-16 px-2 py-1 bg-slate-600 text-white rounded text-sm" />
-                      <span className="text-gray-300 text-xs">lbs ×</span>
-                      <input type="number" placeholder={ex.reps} value={ex.reps2[j]} onChange={(e) => { const w = { ...workout }; w.exercises[i].reps2[j] = e.target.value; setWorkout(w); }} className="w-14 px-2 py-1 bg-slate-600 text-white rounded text-sm" />
-                      <span className="text-gray-300 text-xs">reps</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
+                    )}
+                    {Array.from({ length: ex.sets }).map((_, j) => (
+                      <div key={j} className="flex items-center gap-2 mb-2 flex-wrap">
+                        <button onClick={() => { const w = { ...workout }; w.exercises[i].done[j] = !w.exercises[i].done[j]; setWorkout(w); if (w.exercises[i].done[j]) setTimer({ ...timer, left: timer.time, active: true }); }} className={`w-9 h-9 rounded flex items-center justify-center font-bold border-2 ${ex.done[j] ? 'bg-green-600 border-green-600 text-white' : 'bg-slate-600 border-slate-500 text-gray-400'}`}>
+                          {ex.done[j] ? '✓' : ''}
+                        </button>
+                        <span className="text-white text-sm w-12">Set {j + 1}</span>
+                        <input type="number" placeholder="Wt" value={ex.weights[j]} onChange={(e) => { const w = { ...workout }; w.exercises[i].weights[j] = e.target.value; setWorkout(w); }} className="w-16 px-2 py-1 bg-slate-600 text-white rounded text-sm" />
+                        <span className="text-gray-300 text-xs">lbs ×</span>
+                        <input type="number" placeholder={ex.reps} value={ex.reps2[j]} onChange={(e) => { const w = { ...workout }; w.exercises[i].reps2[j] = e.target.value; setWorkout(w); }} className="w-14 px-2 py-1 bg-slate-600 text-white rounded text-sm" />
+                        <span className="text-gray-300 text-xs">reps</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
 
               <button onClick={() => { saveWorkoutToDb({ ...workout, end: new Date().toISOString() }); setWorkout(null); setView('home'); }} className="w-full bg-green-600 text-white py-3 rounded font-bold flex items-center justify-center gap-2 hover:bg-green-700">
                 <Save />💾 Save to Cloud
@@ -476,6 +689,7 @@
         );
       }
 
+      // HOME VIEW
       const stats = {
         totalWorkouts: workouts.length,
         totalSets: workouts.reduce((s, w) => s + w.exercises.reduce((t, e) => t + e.done.filter(Boolean).length, 0), 0),
@@ -517,6 +731,12 @@
               </div>
             </div>
 
+            <div className="mb-6">
+              <button onClick={() => setView('progress')} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-2 hover:from-indigo-700 hover:to-purple-700">
+                <BarChart />View Progress Dashboard
+              </button>
+            </div>
+
             <h2 className="text-2xl font-bold mb-4">Templates</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {Object.entries(templates).map(([k, t]) => (
@@ -541,11 +761,18 @@
               <div className="space-y-2">
                 {workouts.slice(0, 20).map(w => (
                   <div key={w.id} className="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-bold text-gray-800">{w.name}</div>
                       <div className="text-sm text-gray-600">{new Date(w.start).toLocaleDateString()} • {w.exercises.reduce((s, e) => s + e.done.filter(Boolean).length, 0)} sets</div>
                     </div>
-                    <button onClick={() => deleteWorkout(w.id)} className="text-red-500 hover:text-red-700"><Trash2 /></button>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingWorkout(w)} className="text-blue-600 hover:text-blue-700" title="Edit">
+                        <Edit2 />
+                      </button>
+                      <button onClick={() => deleteWorkout(w.id)} className="text-red-500 hover:text-red-700" title="Delete">
+                        <Trash2 />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
