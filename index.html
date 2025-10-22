@@ -20,8 +20,8 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-    // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
-    const firebaseConfig = {
+  // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
+     const firebaseConfig = {
       apiKey: "AIzaSyDflVWpWRaM79otPlFdgY9Jj2_TT8coP8c",
       authDomain: "workout-tracker-cf45f.firebaseapp.com",
       projectId: "workout-tracker-cf45f",
@@ -29,6 +29,7 @@
       messagingSenderId: "557876111419",
       appId: "1:557876111419:web:621155c84179128c89541e"
     };
+
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
@@ -102,6 +103,7 @@
       const [newEx, setNewEx] = useState({ name: '', sets: 3, reps: 10, instructions: '', videoUrl: '' });
       const [editEx, setEditEx] = useState(null);
       const [video, setVideo] = useState(null);
+      const [videoOrientation, setVideoOrientation] = useState('landscape'); // 'landscape' or 'portrait'
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
       const [authMode, setAuthMode] = useState('login');
@@ -229,7 +231,7 @@
         const id = setInterval(() => {
           setTimer(t => {
             if (t.left <= 1) {
-              alert('⏰ REST DONE!');
+              playSound('complete');
               return { ...t, left: 0, active: false };
             }
             return { ...t, left: t.left - 1 };
@@ -237,6 +239,57 @@
         }, 1000);
         return () => clearInterval(id);
       }, [timer.active, timer.left]);
+
+      const playSound = (type = 'complete') => {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const now = ctx.currentTime;
+          
+          if (type === 'complete') {
+            // Rest timer complete - multiple beeps
+            for (let i = 0; i < 5; i++) {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.frequency.value = i % 2 === 0 ? 880 : 1046;
+              osc.type = 'square';
+              const start = now + (i * 0.2);
+              gain.gain.setValueAtTime(0.3, start);
+              gain.gain.exponentialRampToValueAtTime(0.01, start + 0.15);
+              osc.start(start);
+              osc.stop(start + 0.15);
+            }
+            alert('⏰ REST DONE!');
+          } else if (type === 'ding') {
+            // Set completed - single pleasant ding
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 800;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now);
+            osc.stop(now + 0.3);
+            
+            // Add a higher harmonic for a bell-like sound
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 1200;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, now);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc2.start(now);
+            osc2.stop(now + 0.25);
+          }
+        } catch (e) {
+          console.error('Audio error:', e);
+        }
+      };
 
       const getVideoId = (url) => {
         if (!url) return null;
@@ -598,15 +651,23 @@
           <div className="min-h-screen bg-slate-900 p-4">
             {video && (
               <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4" onClick={() => setVideo(null)}>
-                <div className="w-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+                <div className={`${videoOrientation === 'portrait' ? 'w-full max-w-md' : 'w-full max-w-4xl'}`} onClick={(e) => e.stopPropagation()}>
                   <div className="bg-slate-800 rounded-lg p-4">
-                    <div className="flex justify-between mb-3">
+                    <div className="flex justify-between items-center mb-3">
                       <div className="text-white font-semibold">Video Tutorial</div>
-                      <button onClick={() => setVideo(null)} className="text-white text-2xl hover:text-gray-300">✕</button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setVideoOrientation(videoOrientation === 'portrait' ? 'landscape' : 'portrait')}
+                          className="bg-slate-600 text-white px-3 py-1 rounded text-sm hover:bg-slate-500"
+                        >
+                          {videoOrientation === 'portrait' ? '📱 Portrait' : '🖥️ Landscape'}
+                        </button>
+                        <button onClick={() => setVideo(null)} className="text-white text-2xl hover:text-gray-300">✕</button>
+                      </div>
                     </div>
                     
                     {vid ? (
-                      <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+                      <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: videoOrientation === 'portrait' ? '177.78%' : '56.25%' }}>
                         {vid.type === 'youtube' && <iframe key={vid.id} src={`https://www.youtube.com/embed/${vid.id}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen={true} title="Video" />}
                         {vid.type === 'vimeo' && <iframe key={vid.id} src={`https://player.vimeo.com/video/${vid.id}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen={true} title="Video" />}
                         {vid.type === 'drive' && <iframe key={vid.id} src={`https://drive.google.com/file/d/${vid.id}/preview`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay" allowFullScreen={true} title="Video" />}
@@ -614,6 +675,10 @@
                     ) : (
                       <div className="bg-slate-700 rounded-lg p-8 text-center text-white">Could not load video</div>
                     )}
+                    
+                    <div className="mt-2 text-xs text-gray-400 text-center">
+                      Click the button above to switch between portrait and landscape mode
+                    </div>
                   </div>
                 </div>
               </div>
@@ -666,7 +731,16 @@
                     )}
                     {Array.from({ length: ex.sets }).map((_, j) => (
                       <div key={j} className="flex items-center gap-2 mb-2 flex-wrap">
-                        <button onClick={() => { const w = { ...workout }; w.exercises[i].done[j] = !w.exercises[i].done[j]; setWorkout(w); if (w.exercises[i].done[j]) setTimer({ ...timer, left: timer.time, active: true }); }} className={`w-9 h-9 rounded flex items-center justify-center font-bold border-2 ${ex.done[j] ? 'bg-green-600 border-green-600 text-white' : 'bg-slate-600 border-slate-500 text-gray-400'}`}>
+                        <button onClick={() => { 
+                          const w = { ...workout }; 
+                          const wasCompleted = w.exercises[i].done[j];
+                          w.exercises[i].done[j] = !wasCompleted; 
+                          setWorkout(w); 
+                          if (!wasCompleted) {
+                            playSound('ding');
+                            setTimer({ ...timer, left: timer.time, active: true });
+                          }
+                        }} className={`w-9 h-9 rounded flex items-center justify-center font-bold border-2 ${ex.done[j] ? 'bg-green-600 border-green-600 text-white' : 'bg-slate-600 border-slate-500 text-gray-400'}`}>
                           {ex.done[j] ? '✓' : ''}
                         </button>
                         <span className="text-white text-sm w-12">Set {j + 1}</span>
