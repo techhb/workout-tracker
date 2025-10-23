@@ -20,9 +20,8 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
     
-
-      // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
-     const firebaseConfig = {
+    // ⚠️⚠️⚠️ REPLACE WITH YOUR FIREBASE CONFIG ⚠️⚠️⚠️
+  const firebaseConfig = {
       apiKey: "AIzaSyDflVWpWRaM79otPlFdgY9Jj2_TT8coP8c",
       authDomain: "workout-tracker-cf45f.firebaseapp.com",
       projectId: "workout-tracker-cf45f",
@@ -174,6 +173,29 @@
         }
       };
 
+      const saveWorkoutProgress = async (workoutData, workoutId = null) => {
+        if (!user) return;
+        try {
+          if (workoutId) {
+            // Update existing workout
+            await db.collection('users').doc(user.uid).collection('workouts').doc(workoutId).update({
+              ...workoutData,
+              updated: new Date().toISOString()
+            });
+          } else {
+            // Create new in-progress workout
+            await db.collection('users').doc(user.uid).collection('workouts').add({
+              ...workoutData,
+              inProgress: true,
+              created: new Date().toISOString()
+            });
+          }
+          loadData(user.uid);
+        } catch (error) {
+          console.error('Error saving progress:', error);
+        }
+      };
+
       const updateWorkoutInDb = async (workoutId, workoutData) => {
         if (!user) return;
         try {
@@ -195,6 +217,34 @@
           setWorkouts(workouts.filter(w => w.id !== workoutId));
         } catch (error) {
           console.error('Error deleting:', error);
+        }
+      };
+
+      const resumeWorkout = (workoutData) => {
+        // Load the workout with all existing progress
+        setWorkout({
+          name: workoutData.name,
+          start: workoutData.start,
+          resumedFrom: workoutData.id,
+          exercises: workoutData.exercises.map(ex => ({
+            ...ex,
+            // Ensure arrays exist
+            done: ex.done || Array(ex.sets).fill(false),
+            weights: ex.weights || Array(ex.sets).fill(''),
+            reps2: ex.reps2 || Array(ex.sets).fill('')
+          }))
+        });
+        setResumingWorkout(true);
+        setView('workout');
+      };
+
+      const handleNavigateAway = async () => {
+        if (workout && !workout.end) {
+          // Auto-save workout in progress
+          const confirmed = confirm('Save workout progress before leaving?');
+          if (confirmed) {
+            await saveWorkoutProgress({ ...workout, end: new Date().toISOString() }, workout.resumedFrom);
+          }
         }
       };
 
@@ -739,13 +789,14 @@
                   <h1 className="text-2xl font-bold text-white">{workout.name}</h1>
                   <div className="text-sm text-gray-400 mt-1">
                     Duration: <span className="text-green-400 font-semibold">{workoutDuration()}</span>
+                    {resumingWorkout && <span className="ml-2 text-yellow-400">🔄 Resumed</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowTimeEdit(!showTimeEdit)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                     ⏱️ Edit Time
                   </button>
-                  <button onClick={() => setView('home')} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                  <button onClick={async () => { await handleNavigateAway(); setWorkout(null); setResumingWorkout(false); setView('home'); }} className="text-gray-400 hover:text-white text-2xl">✕</button>
                 </div>
               </div>
 
@@ -839,8 +890,12 @@
                 );
               })}
 
-              <button onClick={() => { saveWorkoutToDb({ ...workout, end: new Date().toISOString() }); setWorkout(null); setView('home'); }} className="w-full bg-green-600 text-white py-3 rounded font-bold flex items-center justify-center gap-2 hover:bg-green-700">
-                <Save />💾 Save to Cloud
+              <button onClick={() => { saveWorkoutToDb({ ...workout, end: new Date().toISOString(), inProgress: false }); setWorkout(null); setResumingWorkout(false); setView('home'); }} className="w-full bg-green-600 text-white py-3 rounded font-bold flex items-center justify-center gap-2 hover:bg-green-700">
+                <Save />💾 Complete Workout
+              </button>
+              
+              <button onClick={async () => { await saveWorkoutProgress({ ...workout, end: new Date().toISOString() }, workout.resumedFrom); setWorkout(null); setResumingWorkout(false); setView('home'); }} className="w-full mt-2 bg-yellow-600 text-white py-2 rounded font-semibold flex items-center justify-center gap-2 hover:bg-yellow-700">
+                💾 Save Progress & Exit
               </button>
             </div>
           </div>
@@ -917,18 +972,34 @@
               </div>
             ) : (
               <div className="space-y-2">
-                {workouts.slice(0, 20).map(w => {
+                {workouts.slice(0, 20).map((w, idx) => {
                   const duration = w.end && w.start ? Math.floor((new Date(w.end) - new Date(w.start)) / 60000) : null;
+                  const isMostRecent = idx === 0;
+                  const isInProgress = w.inProgress;
+                  
                   return (
-                    <div key={w.id} className="bg-gray-50 rounded-lg p-4 flex justify-between items-center hover:shadow-md transition">
+                    <div key={w.id} className={`rounded-lg p-4 flex justify-between items-center hover:shadow-md transition ${isInProgress ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-gray-50'}`}>
                       <div className="flex-1">
-                        <div className="font-bold text-gray-800">{w.name}</div>
+                        <div className="font-bold text-gray-800 flex items-center gap-2">
+                          {w.name}
+                          {isInProgress && <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded">IN PROGRESS</span>}
+                          {isMostRecent && !isInProgress && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">LATEST</span>}
+                        </div>
                         <div className="text-sm text-gray-600">
                           {new Date(w.start).toLocaleDateString()} • {w.exercises.reduce((s, e) => s + e.done.filter(Boolean).length, 0)} sets
                           {duration && <span className="ml-2">• {duration} min</span>}
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        {isMostRecent && (
+                          <button 
+                            onClick={() => resumeWorkout(w)} 
+                            className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 flex items-center gap-1"
+                            title="Resume this workout"
+                          >
+                            <Play />Resume
+                          </button>
+                        )}
                         <button onClick={() => setEditingWorkout(w)} className="text-blue-600 hover:text-blue-700" title="Edit">
                           <Edit2 />
                         </button>
