@@ -55,31 +55,277 @@
     const BarChart = (p) => <Icon {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></Icon>;
     const History = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
 
-    const EXERCISES = {
-      bicepTricep: [
-        { name: 'Barbell Curl', sets: 3, reps: 10 },
-        { name: 'Incline Dumbbell Curl', sets: 3, reps: 12 },
-        { name: 'Close Grip Bench Press', sets: 3, reps: 8 }
-      ],
-      chest: [
-        { name: 'Barbell Bench Press', sets: 4, reps: 8 },
-        { name: 'Incline Dumbbell Press', sets: 3, reps: 10 },
-        { name: 'Weighted Dips', sets: 3, reps: 10 }
-      ],
-      back: [
-        { name: 'Deadlift', sets: 4, reps: 6 },
-        { name: 'Pull-ups', sets: 3, reps: 8 },
-        { name: 'Barbell Row', sets: 3, reps: 10 }
-      ],
-      shoulders: [
-        { name: 'Overhead Press', sets: 4, reps: 8 },
-        { name: 'Lateral Raise', sets: 4, reps: 12 }
-      ],
-      legs: [
-        { name: 'Squat', sets: 4, reps: 8 },
-        { name: 'Romanian Deadlift', sets: 3, reps: 10 }
-      ]
-    };
+   const EXERCISES = {
+  bicepTricep: [
+    {
+      name: 'Barbell Curl',
+      sets: 3,
+      reps: '8-12',
+      instructions: 'Stand with feet shoulder-width, grip barbell at shoulder-width, curl slowly keeping elbows tucked, pause at top, lower with control.',
+      videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=171'
+    },
+    {
+      name: 'Close-Grip Bench Press',
+      sets: 4,
+      reps: '6-10',
+      instructions: 'Lie on bench, grip barbell narrower than shoulder-width, lower to mid-chest, press up powerfully, keep elbows close to body.',
+      videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=614'
+    },
+    {
+      name: 'Weighted Chin-Up (Supinated Grip)',
+      sets: 3,
+      reps: '6-10',
+      instructions: 'Use supinated grip, hang with full stretch, pull up until chin over bar, lower slowly to avoid swinging.',
+      videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=330'
+    },
+    {
+      name: 'Dumbbell Preacher Curl',
+      sets: 4,
+      reps: '8-12',
+      instructions: 'Sit at preacher bench, arm fully extended, curl dumbbell up, squeeze at top, lower slowly to full stretch.',
+      videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=265'
+    },
+    {
+      name: 'Overhead Dumbbell Triceps Extension',
+      sets: 3,
+      reps: '10-12',
+      instructions: 'Hold dumbbell overhead with both hands, lower behind head keeping elbows high, extend arms fully, avoid flaring elbows.',
+      videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=524'
+    },
+    {
+      name: 'EZ Bar Reverse Curl',
+      sets: 3,
+      reps: '12-15',
+      instructions: 'Grip EZ bar overhand, curl up keeping wrists straight, pause at top, lower slowly to target brachioradialis.',
+      videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=489'
+    }
+  ],
+  chest: [
+    {
+      name: 'Barbell Bench Press',
+      sets: 4,
+      reps: '6-10',
+      instructions: 'Lie flat, grip barbell slightly wider than shoulders, lower to mid-chest, press up, keep scapulae retracted.',
+      videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=180'
+    },
+    {
+      name: 'Incline Dumbbell Press',
+      sets: 3,
+      reps: '8-12',
+      instructions: 'Set bench to 30-45°, hold dumbbells, press up while keeping slight arch in back, lower to chest level.',
+      videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=300'
+    },
+    {
+      name: 'Weighted Dips',
+      sets: 3,
+      reps: '8-12',
+      instructions: 'Lean slightly forward, lower until shoulders below elbows, push up, keep core tight to target chest.',
+      videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=420'
+    },
+    {
+      name: 'Cable Crossover',
+      sets: 3,
+      reps: '10-15',
+      instructions: 'Set cables above shoulders, pull handles down and across body, squeeze chest at peak, return with stretch.',
+      videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=510'
+    }
+  ],
+  back: [
+    {
+      name: 'Deadlift',
+      sets: 4,
+      reps: '4-6',
+      instructions: 'Feet hip-width, grip barbell outside knees, keep back flat, pull up, thrust hips forward, lower with control.',
+      videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=120'
+    },
+    {
+      name: 'Weighted Pull-Up',
+      sets: 3,
+      reps: '6-10',
+      instructions: 'Use overhand grip, hang fully, pull up until chin over bar, lower slowly to maximize lat activation.',
+      videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=330'
+    },
+    {
+      name: 'Barbell Row',
+      sets: 3,
+      reps: '8-12',
+      instructions: 'Hinge at hips, grip barbell, pull to lower ribs, keep back parallel to ground, avoid jerking.',
+      videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=240'
+    },
+    {
+      name: 'Seated Cable Row',
+      sets: 3,
+      reps: '10-12',
+      instructions: 'Sit upright, pull cable handle to mid-torso, retract scapulae, keep elbows close, return with stretch.',
+      videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=450'
+    }
+  ],
+  shoulders: [
+    {
+      name: 'Overhead Barbell Press',
+      sets: 4,
+      reps: '6-10',
+      instructions: 'Stand or sit, grip barbell at shoulder-width, press overhead, lock out arms, lower to collarbone level.',
+      videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=150'
+    },
+    {
+      name: 'Dumbbell Lateral Raise',
+      sets: 4,
+      reps: '10-15',
+      instructions: 'Stand with dumbbells at sides, raise to shoulder height, slight bend in elbows, lower with control.',
+      videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=270'
+    },
+    {
+      name: 'Rear Delt Fly (Dumbbell)',
+      sets: 3,
+      reps: '12-15',
+      instructions: 'Bend forward, hold dumbbells, raise arms outward, squeeze rear delts, keep movement controlled.',
+      videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=390'
+    },
+    {
+      name: 'Face Pull',
+      sets: 3,
+      reps: '12-15',
+      instructions: 'Set cable at face height, pull rope to ears, elbows high, squeeze rear delts, avoid shrugging.',
+      videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=510'
+    }
+  ],
+  legs: [
+    {
+      name: 'Barbell Squat',
+      sets: 4,
+      reps: '6-10',
+      instructions: 'Bar on upper traps, feet shoulder-width, squat to knee depth, keep chest up, drive through heels.',
+      videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=180'
+    },
+    {
+      name: 'Romanian Deadlift',
+      sets: 3,
+      reps: '8-12',
+      instructions: 'Hold barbell, hinge at hips, lower to mid-shin, keep back flat, pull up using hamstrings.',
+      videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=300'
+    },
+    {
+      name: 'Bulgarian Split Squat',
+      sets: 3,
+      reps: '10-12',
+      instructions: 'Rear foot elevated, front foot forward, lower until front thigh parallel, push through front heel.',
+      videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=420'
+    },
+    {
+      name: 'Leg Press',
+      sets: 3,
+      reps: '10-15',
+      instructions: 'Feet shoulder-width on platform, lower until knees at 90°, push through heels, avoid locking knees.',
+      videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=540'
+    }
+  ]
+};
+
+const DEFAULT = {
+  bicepTricep: {
+    name: 'Bicep & Tricep',
+    exercises: [
+      {
+        name: 'Barbell Curl',
+        sets: 3,
+        reps: '8-12',
+        instructions: 'Stand with feet shoulder-width, grip barbell at shoulder-width, curl slowly keeping elbows tucked, pause at top, lower with control.',
+        videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=171'
+      },
+      {
+        name: 'Close-Grip Bench Press',
+        sets: 4,
+        reps: '6-10',
+        instructions: 'Lie on bench, grip barbell narrower than shoulder-width, lower to mid-chest, press up powerfully, keep elbows close to body.',
+        videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=614'
+      },
+      {
+        name: 'Dumbbell Preacher Curl',
+        sets: 4,
+        reps: '8-12',
+        instructions: 'Sit at preacher bench, arm fully extended, curl dumbbell up, squeeze at top, lower slowly to full stretch.',
+        videoUrl: 'https://www.youtube.com/embed/GNO4OtYoCYk?start=265'
+      }
+    ]
+  },
+  chest: {
+    name: 'Chest',
+    exercises: [
+      {
+        name: 'Barbell Bench Press',
+        sets: 4,
+        reps: '6-10',
+        instructions: 'Lie flat, grip barbell slightly wider than shoulders, lower to mid-chest, press up, keep scapulae retracted.',
+        videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=180'
+      },
+      {
+        name: 'Incline Dumbbell Press',
+        sets: 3,
+        reps: '8-12',
+        instructions: 'Set bench to 30-45°, hold dumbbells, press up while keeping slight arch in back, lower to chest level.',
+        videoUrl: 'https://www.youtube.com/embed/OZb-1z3gTeg?start=300'
+      }
+    ]
+  },
+  back: {
+    name: 'Back',
+    exercises: [
+      {
+        name: 'Deadlift',
+        sets: 4,
+        reps: '4-6',
+        instructions: 'Feet hip-width, grip barbell outside knees, keep back flat, pull up, thrust hips forward, lower with control.',
+        videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=120'
+      },
+      {
+        name: 'Weighted Pull-Up',
+        sets: 3,
+        reps: '6-10',
+        instructions: 'Use overhand grip, hang fully, pull up until chin over bar, lower slowly to maximize lat activation.',
+        videoUrl: 'https://www.youtube.com/embed/eGo4IYlbE5g?start=330'
+      }
+    ]
+  },
+  shoulders: {
+    name: 'Shoulders',
+    exercises: [
+      {
+        name: 'Overhead Barbell Press',
+        sets: 4,
+        reps: '6-10',
+        instructions: 'Stand or sit, grip barbell at shoulder-width, press overhead, lock out arms, lower to collarbone level.',
+        videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=150'
+      },
+      {
+        name: 'Dumbbell Lateral Raise',
+        sets: 4,
+        reps: '10-15',
+        instructions: 'Stand with dumbbells at sides, raise to shoulder height, slight bend in elbows, lower with control.',
+        videoUrl: 'https://www.youtube.com/embed/TLsT097v1dc?start=270'
+      }
+    ]
+  },
+  legs: {
+    name: 'Legs',
+    exercises: [
+      {
+        name: 'Barbell Squat',
+        sets: 4,
+        reps: '6-10',
+        instructions: 'Bar on upper traps, feet shoulder-width, squat to knee depth, keep chest up, drive through heels.',
+        videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=180'
+      },
+      {
+        name: 'Romanian Deadlift',
+        sets: 3,
+        reps: '8-12',
+        instructions: 'Hold barbell, hinge at hips, lower to mid-shin, keep back flat, pull up using hamstrings.',
+        videoUrl: 'https://www.youtube.com/embed/ZOQUNh3sK1M?start=300'
+      }
+    ]
+  }
+};
 
     const DEFAULT = {
       bicepTricep: { name: 'Bicep & Tricep', exercises: [{ name: 'Barbell Curl', sets: 3, reps: 10, instructions: '', videoUrl: '' }] },
