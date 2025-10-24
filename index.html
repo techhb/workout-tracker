@@ -360,6 +360,7 @@
     const [path, query] = url.split('?');
     const id = path.split('embed/')[1].split('/')[0].split('&')[0];
     const params = query ? `?${query}` : ''; // Preserve query parameters
+    console.log(id)
     return { type: 'youtube', id, params };
   }
 
