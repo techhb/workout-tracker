@@ -351,32 +351,44 @@
         }
       };
 
-      const getVideoId = (url) => {
-        if (!url) return null;
-        url = String(url).trim().replace('https://', '').replace('http://', '');
-        
-        if (url.includes('vimeo.com')) {
-          const match = url.match(/vimeo\.com\/(\d+)/);
-          if (match) return { type: 'vimeo', id: match[1] };
-        }
-        
-        if (url.includes('drive.google.com')) {
-          const match = url.match(/\/d\/([^\/]+)/);
-          if (match) return { type: 'drive', id: match[1] };
-        }
-        
-        if (url.includes('youtu.be/')) {
-          const id = url.split('youtu.be/')[1].split('?')[0].split('&')[0];
-          return { type: 'youtube', id };
-        }
-        
-        if (url.includes('youtube.com/watch') && url.includes('v=')) {
-          const id = url.split('v=')[1].split('&')[0].split('#')[0];
-          return { type: 'youtube', id };
-        }
-        
-        return null;
-      };
+    const getVideoId = (url) => {
+  if (!url) return null;
+  url = String(url).trim().replace('https://', '').replace('http://', '');
+
+  // Handle YouTube embed URLs (e.g., youtube.com/embed/GNO4OtYoCYk?start=265)
+  if (url.includes('youtube.com/embed/')) {
+    const [path, query] = url.split('?');
+    const id = path.split('embed/')[1].split('/')[0].split('&')[0];
+    const params = query ? `?${query}` : ''; // Preserve query parameters
+    return { type: 'youtube', id, params };
+  }
+
+  // Handle standard YouTube watch URLs (e.g., youtube.com/watch?v=GNO4OtYoCYk)
+  if (url.includes('youtube.com/watch') && url.includes('v=')) {
+    const id = url.split('v=')[1].split('&')[0].split('#')[0];
+    return { type: 'youtube', id, params: '' };
+  }
+
+  // Handle YouTube short URLs (e.g., youtu.be/GNO4OtYoCYk)
+  if (url.includes('youtu.be/')) {
+    const id = url.split('youtu.be/')[1].split('?')[0].split('&')[0];
+    return { type: 'youtube', id, params: '' };
+  }
+
+  // Handle Vimeo URLs
+  if (url.includes('vimeo.com')) {
+    const match = url.match(/vimeo\.com\/(\d+)/);
+    if (match) return { type: 'vimeo', id: match[1], params: '' };
+  }
+
+  // Handle Google Drive URLs
+  if (url.includes('drive.google.com')) {
+    const match = url.match(/\/d\/([^\/]+)/);
+    if (match) return { type: 'drive', id: match[1], params: '' };
+  }
+
+  return null;
+};
 
       if (loading) {
         return (
@@ -765,15 +777,15 @@
                       </div>
                     </div>
                     
-                    {vid ? (
-                      <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: videoOrientation === 'portrait' ? '177.78%' : '56.25%' }}>
-                        {vid.type === 'youtube' && <iframe key={vid.id} src={`https://www.youtube.com/embed/${vid.id}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen={true} title="Video" />}
-                        {vid.type === 'vimeo' && <iframe key={vid.id} src={`https://player.vimeo.com/video/${vid.id}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen={true} title="Video" />}
-                        {vid.type === 'drive' && <iframe key={vid.id} src={`https://drive.google.com/file/d/${vid.id}/preview`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay" allowFullScreen={true} title="Video" />}
-                      </div>
-                    ) : (
-                      <div className="bg-slate-700 rounded-lg p-8 text-center text-white">Could not load video</div>
-                    )}
+                  {vid ? (
+  <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: videoOrientation === 'portrait' ? '177.78%' : '56.25%' }}>
+    {vid.type === 'youtube' && <iframe key={vid.id} src={`https://www.youtube.com/embed/${vid.id}${vid.params}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen={true} title="Video" />}
+    {vid.type === 'vimeo' && <iframe key={vid.id} src={`https://player.vimeo.com/video/${vid.id}`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen={true} title="Video" />}
+    {vid.type === 'drive' && <iframe key={vid.id} src={`https://drive.google.com/file/d/${vid.id}/preview`} className="absolute inset-0 w-full h-full" style={{ border: 'none' }} allow="autoplay" allowFullScreen={true} title="Video" />}
+  </div>
+) : (
+  <div className="bg-slate-700 rounded-lg p-8 text-center text-white">Could not load video</div>
+)}
                     
                     <div className="mt-2 text-xs text-gray-400 text-center">
                       Click the button above to switch between portrait and landscape mode
