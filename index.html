@@ -1106,7 +1106,17 @@
                 );
               })}
 
-              <button onClick={() => { saveWorkoutToDb({ ...workout, end: new Date().toISOString(), inProgress: false }); setWorkout(null); setResumingWorkout(false); setView('home'); }} className="w-full bg-green-600 text-white py-3 rounded font-bold flex items-center justify-center gap-2 hover:bg-green-700">
+              <button onClick={() => { 
+                const completedWorkout = { ...workout, end: new Date().toISOString(), inProgress: false, completed: true };
+                if (workout.resumedFrom) {
+                  updateWorkoutInDb(workout.resumedFrom, completedWorkout);
+                } else {
+                  saveWorkoutToDb(completedWorkout);
+                }
+                setWorkout(null); 
+                setResumingWorkout(false); 
+                setView('home'); 
+              }} className="w-full bg-green-600 text-white py-3 rounded font-bold flex items-center justify-center gap-2 hover:bg-green-700">
                 <Save />💾 Complete Workout
               </button>
               
@@ -1191,6 +1201,7 @@
                   const duration = w.end && w.start ? Math.floor((new Date(w.end) - new Date(w.start)) / 60000) : null;
                   const isMostRecent = idx === 0;
                   const isInProgress = w.inProgress;
+                  const isCompleted = w.completed;
                   
                   return (
                     <div key={w.id} className={`rounded-lg p-4 flex justify-between items-center hover:shadow-md transition ${isInProgress ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-gray-50'}`}>
@@ -1198,7 +1209,8 @@
                         <div className="font-bold text-gray-800 flex items-center gap-2">
                           {w.name}
                           {isInProgress && <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded">IN PROGRESS</span>}
-                          {isMostRecent && !isInProgress && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">LATEST</span>}
+                          {isMostRecent && !isInProgress && !isCompleted && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">LATEST</span>}
+                          {isCompleted && <span className="text-xs bg-green-600 text-white px-2 py-1 rounded">✓ COMPLETED</span>}
                         </div>
                         <div className="text-sm text-gray-600">
                           {new Date(w.start).toLocaleDateString()} • {w.exercises.reduce((s, e) => s + e.done.filter(Boolean).length, 0)} sets
@@ -1206,7 +1218,7 @@
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {isMostRecent && (
+                        {isMostRecent && !isCompleted && (
                           <button 
                             onClick={() => resumeWorkout(w)} 
                             className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 flex items-center gap-1"
